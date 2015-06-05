@@ -30,16 +30,19 @@ _mapped_functions = {
 def command(cmd, capture=False):
     """ wraps vim.capture to execute a vim command.  if capture is true, we'll
     return the output of that command """
-    if capture:
-        with preserve_registers("a"):
-            vim.command("redir @a")
+    try:
+        if capture:
+            with preserve_registers("a"):
+                vim.command("redir @a")
+                vim.command(cmd)
+                vim.command("redir END")
+                out = get_register("a")
+        else:
+            out = None
             vim.command(cmd)
-            vim.command("redir END")
-            out = get_register("a")
-    else:
-        out = None
-        vim.command(cmd)
-    return out
+        return out
+    except vim.error:
+        raise RuntimeError('Failed to run command \"%s\"' % cmd), None, sys.exc_info()[2]
 
 def dispatch_mapped_function(key):
     """ this function will be called by any function mapped to a key in visual
